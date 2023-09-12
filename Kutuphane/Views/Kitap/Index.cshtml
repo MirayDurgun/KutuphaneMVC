@@ -1,0 +1,217 @@
+﻿@section Styles{
+    <link href="//cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
+}
+
+<a id="btnEkle" class="btn btn-primary">EKLE</a>
+
+<table class="table table-striped">
+</table>
+
+
+
+
+
+<div class="modal fade" id="modalEkle" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitleId">Kitap Ekleme Formu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="txtKitapAdi" class="form-control frmInput" placeholder="Lütfen kitabın adını giriniz" /><br />
+                <input type="text" id="txtISBN" class="form-control frmInput" placeholder="Lütfen ISBN giriniz" /><br />
+                <div class="form-group">
+                    <label class="form-label">Yazar seçiniz</label>
+                    <select id="ddlYazarlar" class="form-select" multiple style="width:100%">
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="" class="form-label">Yayın evlerini seçiniz</label>
+                    <select id="ddlYayinEvleri" multiple="multiple" class="form-select" style="width:100%">
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">İptal</button>
+                <a id="btnKaydet" class="btn btn-primary">Kaydet</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts{
+    <script src="//cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script>
+        var DataTable;
+
+        $(document).ready(() => {
+
+            $("#btnEkle").click(() => {
+                $("#modalEkle").modal("show");
+                ddlleriDoldur();
+
+                $("#btnKaydet").off().click(function () {
+
+                    let kitap = {
+                        ad: $("#txtKitapAdi").val(),
+                        isbn: $("#txtISBN").val()
+
+
+                    };
+
+                    let yazarlar = [];
+                    $("#ddlYazarlar option:selected").each(function () {
+                        yazarlar.push($(this).val());
+                    })
+
+                    let yayinEvleri = [];
+                    $("#ddlYayinEvleri option:selected").each(function () {
+                        yayinEvleri.push($(this).val());
+                    })
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '/Kitap/Add',
+                        data: {
+                            kitap: kitap,
+                            yazarlar: yazarlar,
+                            yayinEvleri: yayinEvleri
+                        },
+                        success: function () {
+                            $("#modalEkle").modal('hide');
+                            toastr.success("Başarılı");
+                            DataTable.ajax.reload();
+                        }
+                    });
+
+                });
+            })
+
+            kitaplariDoldur();
+        });
+        function ddlleriDoldur() {
+            $.ajax({
+                type: 'GET',
+                url: '/YayinEvi/GetAllPublishers',
+                success: function (res) {
+                    $("#ddlYayinEvleri").empty();
+                    for (var item of res.data) {
+                        $("#ddlYayinEvleri").append(new Option(item.ad, item.id));
+                    }
+
+                    $("#ddlYayinEvleri").select2({
+                        dropdownParent: $("#modalEkle"),
+                        placeholder: "Yayın evi seçiniz"
+                    });
+                }
+
+            });
+
+            $.ajax({
+                type: 'GET',
+                url: '/Yazar/GetAll',
+                success: function (res) {
+                    $("#ddlYazarlar").empty();
+                    for (var item of res.data) {
+                        $("#ddlYazarlar").append(`<option value="${item.id}">${item.ad}</option>`);
+                    }
+
+                    $("#ddlYazarlar").select2({
+                        dropdownParent: $("#modalEkle"),
+                        placeholder: "Yazar seçiniz"
+                    });
+
+                }
+            });
+        }
+        function kitaplariDoldur() {
+            DataTable = $("table").DataTable({
+                ajax: '/Kitap/GetAll',
+                columns: [
+                    { data: 'id', title: 'Id' },
+                    { data: 'ad', title: 'Kitap Adı' },
+                    { data: 'isbn', title: 'ISBN' },
+                    {
+                        data: 'yazarlar', title: 'Yazarlar', render: function (data, type, row) {
+
+                            let yazarlar = "";
+
+                            for (var item of data) {
+                                yazarlar += item.ad + '<br>';
+                            }
+                            return yazarlar;
+
+                        }
+                    },
+                    {
+                        data: 'yayinEvleri', title: 'Yayın Evleri', render: function (data) {
+                            let yayinEvleri = "";
+                            for (var item of data) {
+                                yayinEvleri += item.ad + '<br>';
+                            }
+                            return yayinEvleri;
+                        }
+                    },
+                    {
+                        data: 'id', title: 'İşlemler', render: function (x) {
+                            return `<a class="btn btn-danger">Sil</a> <a onclick="kitapDuzenle(${x})" class="btn btn-success">Düzenle</a>`;
+                        }
+                    }
+                ]
+            });
+        }
+
+        function kitapDuzenle(kitapId) {
+
+            $.ajax({
+                type: 'POST',
+                url: '/Kitap/GetById',
+                data: { id: kitapId },
+                success: function (resKitap) {
+                    $("#txtKitapAdi").val(resKitap.ad);
+                    $("#txtISBN").val(resKitap.isbn);
+                    //yazarları doldur işaretle
+                    $.ajax({
+                        type: 'GET',
+                        url: '/Yazar/GetAll',
+                        success: function (resYazar) {
+                            $("#ddlYazarlar").empty();
+                            for (var yazar of resYazar.data) {
+                                $("#ddlYazarlar").append(new Option(yazar.ad, yazar.id, false, resKitap.yazarlar.find(y => y.id == yazar.id) != null));
+                            }
+
+                            $("#ddlYazarlar").select2({
+                                dropdownParent: $("#modalEkle"),
+                                placeholder: "Yazar seçiniz"
+                            });
+
+                        }
+                    });
+                    //yayınevlerini doldur işaratle
+                    $.ajax({
+                        type: 'GET',
+                        url: '/YayinEvi/GetAllPublishers',
+                        success: function (resYayinEvi) {
+                            $("#ddlYayinEvleri").empty();
+                            for (var yayinEvi of resYayinEvi.data) {
+                                $("#ddlYayinEvleri").append(new Option(yayinEvi.ad, yayinEvi.id, false, resKitap.yayinEvleri.find(y => y.id == yayinEvi.id) != null));
+                            }
+
+                            $("#ddlYayinEvleri").select2({
+                                dropdownParent: $("#modalEkle"),
+                                placeholder: "Yayın evi seçiniz"
+                            });
+                        }
+
+                    });
+
+                    $("#modalEkle").modal('show');
+                }
+            })
+
+        }
+
+    </script>
+                }

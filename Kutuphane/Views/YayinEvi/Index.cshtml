@@ -1,0 +1,175 @@
+﻿@section Styles{
+    <link href="//cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
+}
+
+<a id="btnEkle" class="btn btn-primary">EKLE</a>
+
+<table id="tblYayinEvleri" class="table table-striped"></table>
+
+
+<div class="modal fade" id="modalEkle" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitleId">Yayın Evi <span id="lblModalTitle"></span> Formu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="txtYayinEviAd" class="form-control frmInput" placeholder="Lütfen yayın evi adını giriniz" /><br />
+                <input type="text" id="txtYayinEviAdres" class="form-control frmInput" placeholder="Lütfen yayın evi adresini giriniz" /><br />
+                <input type="text" id="txtTelefon" class="form-control frmInput" placeholder="Lütfen yayın evi telefonunu giriniz" /><br />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">İptal</button>
+                <a id="btnKaydet" class="btn btn-primary">Kaydet</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@section Scripts{
+    <script src="//cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script>
+
+        var DataTable;
+
+        $(document).ready(function () {
+
+            yayinEvleriniDoldur();
+
+            $("#btnEkle").on('click', function () {
+                $(".frmInput").val('');
+                $("#modalEkle").modal("show");
+                $("#lblModalTitle").text("Ekleme");
+
+
+                $("#btnKaydet").one('click', function () {
+
+                    let data = {
+                        ad: $("#txtYayinEviAd").val(),
+                        adres: $("#txtYayinEviAdres").val(),
+                        tel: $("#txtTelefon").val()
+                    };
+
+                    $.ajax({
+                        type: 'POST',
+                        data: data,
+                        url: '@Url.Action("Add","YayinEvi")',
+                        success: function (res) {
+                            toastr.success("Başarılı", "Yayın evi eklenmiştir");
+                            DataTable.ajax.reload();
+                            $("#modalEkle").modal("hide");
+
+                        }
+                    });
+
+
+                }).text("Kaydet").removeClass("btn-success").addClass("btn-primary");
+            });
+        });
+        function deletePublisher(disaridanGelenId) {
+
+            Swal.fire({
+                title: 'Silmek istediğiniz emin misiniz ??',
+                showCancelButton: true,
+                confirmButtonText: 'Evet',
+                cancelButtonText: 'Hayır'
+
+            }).then((result) => {
+                /* Read more about isConfirmed, isDenied below */
+                if (result.isConfirmed) {
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '/YayinEvi/DeleteAjax',
+                        data: {
+                            id: disaridanGelenId
+                        },
+                        success: function (res) {
+                            $("#tr" + disaridanGelenId).remove();
+
+                            var statusYazisi = $("#tblYayinEvleri_info").text();
+                            var kayitSayisi = parseInt(statusYazisi.split(' ')[5]) - 1;
+
+                            $("#tblYayinEvleri_info").text(`Showing 1 to ${kayitSayisi} of ${kayitSayisi}  entries `);
+
+                            toastr.success("Silme işlemi başarılı", "BAŞARILI !")
+
+                        }
+                    });
+                }
+            })
+
+        }
+
+        function yayinEvleriniDoldur() {
+            DataTable = $("#tblYayinEvleri").DataTable({
+                ajax: "/YayinEvi/GetAllPublishers",
+                rowId: function (row) {
+                    return "tr" + row.id;
+                },
+                columns: [
+                    { data: "id", title: "ID" },
+                    { data: "ad", title: "Yayın Evi Adı" },
+                    { data: "adres", title: "Adres" },
+                    { data: "tel", title: "Telefon" },
+                    {
+                        data: "id", title: "İşlemler", render: function (id, type, row) {
+                            return `<a onclick="deletePublisher(${id})" class="btn btn-danger">Sil</a> <a onclick="updatePublisher(${id})" class="btn btn-warning">Düzenle</a>`;
+                        }
+                    }
+                ]
+
+            });
+        }
+
+        function updatePublisher(id) {
+
+            //databaseden asıl olan nesneyi cagiriyoruz.
+            $.ajax({
+                type: 'POST',
+                url: '/YayinEvi/GetById',
+                data: {
+                    id: id
+                },
+                success: function (res) {
+                    $("#txtYayinEviAd").val(res.ad);
+                    $("#txtYayinEviAdres").val(res.adres);
+                    $("#txtTelefon").val(res.tel);
+                }
+            });
+            $("#lblModalTitle").text("Düzenleme");
+            $("#modalEkle").modal("show");
+            $("#btnKaydet").text("Güncelle").removeClass("btn-primmary").addClass("btn-success").one('click', function () {
+
+                $.ajax({
+                    url: '/YayinEvi/Upsert',
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        ad: $("#txtYayinEviAd").val(),
+                        adres: $("#txtYayinEviAdres").val(),
+                        tel: $("#txtTelefon").val()
+
+
+                    },
+                    success: function () {
+                        toastr.success("başarılı", "işlem başarılı");
+                        DataTable.ajax.reload();
+                        $("#modalEkle").modal('hide');
+                    }
+
+                })
+
+            });
+
+        }
+        function test() { }
+
+
+    </script>
+
+}
