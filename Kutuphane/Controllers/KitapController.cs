@@ -57,7 +57,7 @@ namespace Kutuphane.Controllers
         [HttpPost]
         //public IActionResult Update(Kitap kitap, List<int> yazarlar, List<int> yayinEvleri)
         //{
-        //    Kitap asil = _context.Kitaplar.Include(k=>k.YayinEvleri).Include(k=>k.Yazarlar).FirstOrDefault(k=>k.Id==kitap.Id);
+        //    Kitap asil = _kitapRepository.Kitaplar.Include(k=>k.YayinEvleri).Include(k=>k.Yazarlar).FirstOrDefault(k=>k.Id==kitap.Id);
 
         //    asil.Ad = kitap.Ad;
         //    asil.ISBN = kitap.ISBN;
@@ -65,33 +65,33 @@ namespace Kutuphane.Controllers
         //    List<Yazar> yazarListesi = new List<Yazar>();
         //    List<YayinEvi> yayinEvleriListesi = new List<YayinEvi>();
         //    foreach (int s in yazarlar)
-        //        yazarListesi.Add(_context.Yazarlar.Find(s));
+        //        yazarListesi.Add(_kitapRepository.Yazarlar.Find(s));
 
         //    foreach (int s in yayinEvleri)
-        //       yayinEvleriListesi.Add(_context.YayinEvleri.Find(s));
+        //       yayinEvleriListesi.Add(_kitapRepository.YayinEvleri.Find(s));
 
         //    asil.Yazarlar = yazarListesi;
         //    asil.YayinEvleri = yayinEvleriListesi;
 
 
-        //    _context.Kitaplar.Update(asil);
-        //    _context.SaveChanges();
+        //    _kitapRepository.Kitaplar.Update(asil);
+        //    _kitapRepository.SaveChanges();
         //    return RedirectToAction("Index");
 
 
 
         //}
 
-        //public IActionResult GetAll()
-        //{
-        //    return Json(new {data=_context.Kitaplar.Include(k=>k.Yazarlar).Include(k=>k.YayinEvleri).ToList()});
+        public IActionResult GetAll()
+        {
+            return Json(new { data = _kitapRepository.GetAll().Include(k => k.Yazarlar).Include(k => k.YayinEvleri).ToList() });
 
-        //}
+        }
 
-        //[HttpPost]
-        //public IActionResult GetById(int id)
-        //{
-        //   return Json( _context.Kitaplar.Include(k => k.Yazarlar).Include(k => k.YayinEvleri).FirstOrDefault(k => k.Id == id));
-        //}
+        [HttpPost]
+        public IActionResult GetById(int id)
+        {
+            return Json(_kitapRepository.GetAll().Where(k => k.Id == id).Include(k => k.Yazarlar).Include(k => k.YayinEvleri).First());
+        }
     }
 }

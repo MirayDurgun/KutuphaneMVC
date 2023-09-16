@@ -18,9 +18,12 @@ namespace Kutuphane.Repository.Concrete
 
         public KitapRepository(KutuphaneContext db) : base(db)
         {
-            _db = db;
         }
 
+        public override IQueryable<Kitap> GetAll()
+        {
+            return _db.Kitaplar.Include(k => k.Yazarlar).Include(k => k.YayinEvleri);
+        }
 
         public List<Kitap> GetAllKitaplar()
         {

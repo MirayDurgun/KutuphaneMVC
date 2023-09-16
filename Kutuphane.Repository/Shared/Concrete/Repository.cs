@@ -19,33 +19,38 @@ namespace Kutuphane.Repository.Shared.Concrete
         public Repository(KutuphaneContext db)
         {
             _db = db;
-            _dbSet=_db.Set<T>();
+            _dbSet = _db.Set<T>();
         }
 
         public void Add(T item)
         {
-           _dbSet.Add(item);
-           
+            _dbSet.Add(item);
+
         }
 
         public void AddRange(IEnumerable<T> items)
         {
-           _db.AddRange(items);
+            _db.AddRange(items);
         }
 
-        public IEnumerable<T> GetAll()
+        public virtual IQueryable<T> GetAll() //virtual bir metodu başka yerde ovveride edeceksek (ezeceksek) kullanılır
         {
-            return _dbSet.Where(t => t.IsDeleted == false).ToList();
+            return _dbSet.Where(t => t.IsDeleted == false);
+        }
+
+        public IQueryable<T> GetAll(Expression<Func<T, bool>> filter)
+        {
+            return _dbSet.Where(filter);
         }
 
         public T GetById(int id)
         {
-           return _dbSet.Find(id);
+            return _dbSet.Find(id);
         }
 
         public T GetFirstOrDefault(Expression<Func<T, bool>> filter)
         {
-           return _dbSet.FirstOrDefault(filter);
+            return _dbSet.FirstOrDefault(filter);
         }
 
         public void Remove(T item)
@@ -62,12 +67,12 @@ namespace Kutuphane.Repository.Shared.Concrete
 
         public void Save()
         {
-           _db.SaveChanges();
+            _db.SaveChanges();
         }
 
         public void Update(T item)
         {
-           _dbSet.Update(item);
+            _dbSet.Update(item);
         }
     }
 }
